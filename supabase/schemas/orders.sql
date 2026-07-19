@@ -1,11 +1,11 @@
 -- Orders schema for workshop order tracker
 
 create type order_status as enum (
-  'Przyjete',
-  'W trakcie',
-  'Wydane',
-  'Zaplacone',
-  'Domowione'
+  'accepted',
+  'in_progress',
+  'delivered',
+  'paid',
+  'ordered'
 );
 
 create type payment_state as enum (
