@@ -37,7 +37,7 @@ export function OrderItems({ items, onUpdateItem, onAddItem, onRemoveItem }: Ord
             />
             <TextField
               id={`item-qty-${item.id}`}
-              label="Ilość"
+              label="Ilość / MB"
               type="text"
               slotProps={{ htmlInput: { inputMode: 'numeric', pattern: '[0-9]*' } }}
               value={item.quantity}
@@ -46,7 +46,7 @@ export function OrderItems({ items, onUpdateItem, onAddItem, onRemoveItem }: Ord
             />
             <TextField
               id={`item-price-${item.id}`}
-              label="Cena jedn."
+              label="Cena jedn. / za metr"
               type="text"
               slotProps={{ htmlInput: { inputMode: 'decimal', pattern: '[0-9]*[.,]?[0-9]*' } }}
               value={item.unit_price}

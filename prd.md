@@ -17,7 +17,7 @@ This app digitizes workshop orders so anyone stops losing track of unpaid work a
 - Keep client data minimal: name + telephone number only.
 - Track products inside an order.
 - Track payment state and payment amount.
-- Allow updates to status, completion date, and notes.
+- Allow updates to status and notes.
 - Use Supabase Auth for login and future user control.
 
 ## Dashboard summary (top of app)
@@ -34,10 +34,11 @@ No other top summary cards are required.
 Each job description/card should be shown in this order:
 
 1. Job title (at the top).
-2. Client name.
-3. Client telephone number (only contact detail shown).
-4. Line items.
-5. Financial details (for example: total, paid amount, remaining amount, payment state).
+2. Status.
+3. Client name.
+4. Client telephone number (only contact detail shown).
+5. Line items.
+6. Financial details (for example: total, paid amount, remaining amount, payment state).
 
 ## Non-goals
 
@@ -59,8 +60,8 @@ Represents a workshop job.
 - `payment_state` — not paid / partial / paid.
 - `payment_due`, `paid_amount`, `total_price`.
 - `product_count` — number of products or items in the order.
-- `due_date`, `completed_at`.
-- `notes`, `extra_details`.
+- `notes`.
+- No separate additional-details text field is required; `notes` is enough.
 
 ### order_items
 
@@ -70,6 +71,8 @@ Tracks individual products or work items inside each order.
 - `order_id` — foreign key to `orders`.
 - `description` — item description.
 - `quantity`, `unit_price`, `item_total`.
+- Line items can also use `ilość MB` when the price is per meter.
+- Support both pricing variants: `ilość MB x cena za metr` and `ilość x cena`.
 - `created_at` / `updated_at`.
 
 ## Status workflow
@@ -91,15 +94,24 @@ Default workshop states:
 ## Primary workflows
 
 1. Create new order
-   - Enter job title, client name, client telephone number, due date, status, payment due, and items.
+   - Enter job title, status, client name, client telephone number, payment due, and items.
 
 2. Update order
    - Change status, add or remove items, update payment state or amounts.
 
-3. Mark completion
-   - Set `completed_at` and `status` when work is finished.
+3. Unsaved changes
+   - If the user leaves with unsaved form changes, show a confirmation dialog in Polish.
+   - The dialog should list the fields that were changed and not saved yet.
+   - The user should be able to either discard changes or save them.
 
-4. Payment tracking
+4. Delete order
+   - Allow deleting a job from the form.
+   - Show a confirmation dialog before the deletion is executed.
+
+5. Mark completion
+   - Set status to the finished workflow state when work is done.
+
+6. Payment tracking
    - Update `paid_amount` and `payment_state`.
 
 ## Implementation notes

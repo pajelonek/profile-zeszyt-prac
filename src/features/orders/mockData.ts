@@ -15,10 +15,7 @@ export const initialOrders: Order[] = [
     paidAmount: 150,
     totalPrice: 500,
     productCount: 2,
-    dueDate: '2026-07-22',
-    completedAt: '',
     notes: 'Klient chce odbiór po 22 lipca.',
-    extraDetails: 'Potrzebny kontakt po naprawie.',
     items: [
       { id: createId(), description: 'Naprawa roweru', quantity: 1, unit_price: 350, item_total: 350 },
       { id: createId(), description: 'Wymiana opon', quantity: 1, unit_price: 150, item_total: 150 },
@@ -37,10 +34,7 @@ export const initialOrders: Order[] = [
     paidAmount: 0,
     totalPrice: 280,
     productCount: 3,
-    dueDate: '2026-07-24',
-    completedAt: '',
     notes: 'Przyjąć w środę rano.',
-    extraDetails: 'Czeka na część zamienną.',
     items: [
       { id: createId(), description: 'Czyszczenie mechanizmu', quantity: 2, unit_price: 80, item_total: 160 },
       { id: createId(), description: 'Konserwacja', quantity: 1, unit_price: 120, item_total: 120 },

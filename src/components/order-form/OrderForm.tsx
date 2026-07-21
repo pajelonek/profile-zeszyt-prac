@@ -21,12 +21,14 @@ type OrderFormProps = Readonly<{
   selectedOrder: Order | null
   titleError: string
   canMarkComplete: boolean
+  canDelete: boolean
   onUpdateDraft: <K extends keyof OrderDraft>(field: K, value: OrderDraft[K]) => void
   onUpdateItem: (itemId: string, field: 'description' | 'quantity' | 'unit_price', value: string) => void
   onAddItem: () => void
   onRemoveItem: (itemId: string) => void
   onSaveOrder: NonNullable<ComponentProps<'form'>['onSubmit']>
   onMarkComplete: () => void
+  onDeleteOrder: () => void
   onTitleError: (error: string) => void
 }>
 
@@ -35,12 +37,14 @@ export function OrderForm({
   selectedOrder,
   titleError,
   canMarkComplete,
+  canDelete,
   onUpdateDraft,
   onUpdateItem,
   onAddItem,
   onRemoveItem,
   onSaveOrder,
   onMarkComplete,
+  onDeleteOrder,
   onTitleError,
 }: OrderFormProps) {
   return (
@@ -58,6 +62,9 @@ export function OrderForm({
             </Box>
 
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} className="w-full sm:w-auto">
+              <Button variant="outlined" type="button" className="w-full sm:w-auto" onClick={onDeleteOrder} color="error" disabled={!canDelete} sx={{ borderRadius: 3, px: 2 }}>
+                Usuń zlecenie
+              </Button>
               <Button variant="outlined" type="button" className="w-full sm:w-auto" onClick={onMarkComplete} color="success" disabled={!canMarkComplete} sx={{ borderRadius: 3, px: 2 }}>
                 Oznacz jako zakończone
               </Button>
@@ -81,6 +88,16 @@ export function OrderForm({
               }}
               fullWidth
             />
+            <FormControl fullWidth>
+              <InputLabel id="status-label">Status</InputLabel>
+              <Select labelId="status-label" label="Status" value={draft.status} onChange={(event) => onUpdateDraft('status', event.target.value)}>
+                {orderStatuses.map((status) => (
+                  <MenuItem key={status} value={status}>
+                    {status}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Box>
 
           <Box className="grid gap-3 md:grid-cols-2">
@@ -101,24 +118,8 @@ export function OrderForm({
             onPaymentStateChange={(value) => onUpdateDraft('paymentState', value)}
           />
 
-          <Box className="grid gap-3 md:grid-cols-3">
-            <FormControl fullWidth>
-              <InputLabel id="status-label">Status</InputLabel>
-              <Select labelId="status-label" label="Status" value={draft.status} onChange={(event) => onUpdateDraft('status', event.target.value)}>
-                {orderStatuses.map((status) => (
-                  <MenuItem key={status} value={status}>
-                    {status}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <TextField id="due-date" label="Termin realizacji" type="date" slotProps={{ inputLabel: { shrink: true } }} value={draft.dueDate} onChange={(event) => onUpdateDraft('dueDate', event.target.value)} fullWidth />
-            <TextField id="completed-at" label="Data zakończenia" type="date" slotProps={{ inputLabel: { shrink: true } }} value={draft.completedAt} onChange={(event) => onUpdateDraft('completedAt', event.target.value)} fullWidth />
-          </Box>
-
           <Box className="grid gap-3 md:grid-cols-2">
             <TextField id="order-notes" className="md:col-span-2" label="Notatki" multiline minRows={3} value={draft.notes} onChange={(event) => onUpdateDraft('notes', event.target.value)} fullWidth />
-            <TextField id="order-extra-details" className="md:col-span-2" label="Dodatkowe informacje" multiline minRows={3} value={draft.extraDetails} onChange={(event) => onUpdateDraft('extraDetails', event.target.value)} fullWidth />
           </Box>
         </Stack>
       </form>

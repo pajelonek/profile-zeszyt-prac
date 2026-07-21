@@ -1,11 +1,15 @@
 import type { OrderDraft, OrderItem } from './types'
 
+let fallbackIdCounter = 0
+
 export const createId = () => {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID()
   }
 
-  return Math.random().toString(36).slice(2)
+  fallbackIdCounter += 1
+
+  return `${Date.now().toString(36)}-${fallbackIdCounter.toString(36)}`
 }
 
 export const formatCurrency = (value: number) =>
@@ -24,10 +28,7 @@ export const createEmptyDraft = (): OrderDraft => ({
   paidAmount: 0,
   totalPrice: 0,
   productCount: 0,
-  dueDate: '',
-  completedAt: '',
   notes: '',
-  extraDetails: '',
   items: [{ id: createId(), description: '', quantity: 1, unit_price: 0, item_total: 0 }],
 })
 

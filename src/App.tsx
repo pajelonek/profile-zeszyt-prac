@@ -1,6 +1,12 @@
 import { useMemo, useState, type ComponentProps } from 'react'
+import Button from '@mui/material/Button'
 import Box from '@mui/material/Box'
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogTitle from '@mui/material/DialogTitle'
 import Stack from '@mui/material/Stack'
+import Typography from '@mui/material/Typography'
 import { AppHeader, OrdersList, OrderForm } from './components'
 import { initialOrders } from './features/orders/mockData'
 import type { Order, OrderDraft } from './features/orders/types'
@@ -18,6 +24,46 @@ const createDraftFromOrder = (order: Order): OrderDraft => ({
     items: cloneItems(order.items),
 })
 
+type NavigationIntent =
+    | { type: 'select'; order: Order }
+    | { type: 'new' }
+
+const changedItems = (left: OrderDraft['items'], right: OrderDraft['items']) => {
+    if (left.length !== right.length) {
+        return true
+    }
+
+    return left.some((item, index) => {
+        const other = right[index]
+
+        if (!other) {
+            return true
+        }
+
+        return (
+            item.description.trim() !== other.description.trim()
+            || Number(item.quantity) !== Number(other.quantity)
+            || Number(item.unit_price) !== Number(other.unit_price)
+        )
+    })
+}
+
+const getChangedFieldLabels = (baseline: OrderDraft, current: OrderDraft) => {
+    const labels: string[] = []
+
+    if ((baseline.title ?? '').trim() !== (current.title ?? '').trim()) labels.push('Tytuł zlecenia')
+    if (baseline.status !== current.status) labels.push('Status')
+    if (baseline.clientName.trim() !== current.clientName.trim()) labels.push('Imię i nazwisko klienta')
+    if (baseline.clientPhone.trim() !== current.clientPhone.trim()) labels.push('Telefon klienta')
+    if (Number(baseline.paymentDue) !== Number(current.paymentDue)) labels.push('Kwota do zapłaty')
+    if (Number(baseline.paidAmount) !== Number(current.paidAmount)) labels.push('Kwota zapłacona')
+    if (baseline.paymentState !== current.paymentState) labels.push('Stan płatności')
+    if (baseline.notes.trim() !== current.notes.trim()) labels.push('Notatki')
+    if (changedItems(baseline.items, current.items)) labels.push('Pozycje zlecenia')
+
+    return labels
+}
+
 type FormSubmitHandler = NonNullable<ComponentProps<'form'>['onSubmit']>
 
 function App() {
@@ -31,10 +77,23 @@ function App() {
 
         return createDraftFromOrder(starter)
     })
+    const [baselineDraft, setBaselineDraft] = useState<OrderDraft>(() => {
+        const starter = initialOrders[0]
+        if (!starter) {
+            return createEmptyDraft()
+        }
+
+        return createDraftFromOrder(starter)
+    })
     const [titleError, setTitleError] = useState('')
+    const [navigationIntent, setNavigationIntent] = useState<NavigationIntent | null>(null)
+    const [isUnsavedDialogOpen, setIsUnsavedDialogOpen] = useState(false)
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
     const selectedOrder = useMemo(() => orders.find((order) => order.id === selectedOrderId) ?? null, [orders, selectedOrderId])
     const canMarkComplete = !!selectedOrderId && draft.status !== 'Wydane'
+    const changedFieldLabels = useMemo(() => getChangedFieldLabels(baselineDraft, draft), [baselineDraft, draft])
+    const hasUnsavedChanges = changedFieldLabels.length > 0
 
     const updateDraft = <K extends keyof OrderDraft>(field: K, value: OrderDraft[K]) => {
         setDraft((current) => ({ ...current, [field]: value }))
@@ -82,22 +141,37 @@ function App() {
         }))
     }
 
-    const handleSelectOrder = (order: Order) => {
-        setSelectedOrderId(order.id)
-        setDraft(createDraftFromOrder(order))
-    }
+    const applyNavigationIntent = (intent: NavigationIntent) => {
+        if (intent.type === 'select') {
+            setSelectedOrderId(intent.order.id)
+            const nextDraft = createDraftFromOrder(intent.order)
+            setDraft(nextDraft)
+            setBaselineDraft(nextDraft)
+            setTitleError('')
+            return
+        }
 
-    const handleNewOrder = () => {
         setSelectedOrderId(null)
-        setDraft(createEmptyDraft())
+        const nextDraft = createEmptyDraft()
+        setDraft(nextDraft)
+        setBaselineDraft(nextDraft)
+        setTitleError('')
     }
 
-    const saveOrder: FormSubmitHandler = (event) => {
-        event.preventDefault()
+    const requestNavigation = (intent: NavigationIntent) => {
+        if (hasUnsavedChanges) {
+            setNavigationIntent(intent)
+            setIsUnsavedDialogOpen(true)
+            return
+        }
 
+        applyNavigationIntent(intent)
+    }
+
+    const persistDraft = () => {
         if (!draft.title?.trim()) {
             setTitleError('Tytuł zlecenia jest wymagany')
-            return
+            return null
         }
 
         const normalizedItems = normalizeItems(draft.items)
@@ -117,10 +191,7 @@ function App() {
             paidAmount: Number(draft.paidAmount) || 0,
             totalPrice,
             productCount,
-            dueDate: draft.dueDate,
-            completedAt: draft.completedAt,
             notes: draft.notes.trim(),
-            extraDetails: draft.extraDetails.trim(),
             items: normalizedItems,
         }
 
@@ -134,7 +205,16 @@ function App() {
         })
 
         setSelectedOrderId(nextOrder.id)
-        setDraft(createDraftFromOrder(nextOrder))
+        const nextDraft = createDraftFromOrder(nextOrder)
+        setDraft(nextDraft)
+        setBaselineDraft(nextDraft)
+
+        return nextOrder
+    }
+
+    const saveOrder: FormSubmitHandler = (event) => {
+        event.preventDefault()
+        persistDraft()
     }
 
     const markComplete = () => {
@@ -142,17 +222,76 @@ function App() {
             return
         }
 
-        const completedAt = new Date().toISOString().slice(0, 10)
-
         setOrders((current) =>
             current.map((order) =>
                 order.id === selectedOrderId
-                    ? { ...order, status: 'Wydane', completedAt, updatedAt: new Date().toISOString() }
+                    ? { ...order, status: 'Wydane', updatedAt: new Date().toISOString() }
                     : order,
             ),
         )
 
-        setDraft((current) => ({ ...current, status: 'Wydane', completedAt }))
+        setDraft((current) => ({ ...current, status: 'Wydane' }))
+    }
+
+    const confirmUnsavedDiscard = () => {
+        if (navigationIntent) {
+            applyNavigationIntent(navigationIntent)
+        }
+
+        setNavigationIntent(null)
+        setIsUnsavedDialogOpen(false)
+    }
+
+    const confirmUnsavedSave = () => {
+        const savedOrder = persistDraft()
+
+        if (!savedOrder) {
+            return
+        }
+
+        if (navigationIntent) {
+            applyNavigationIntent(navigationIntent)
+        }
+
+        setNavigationIntent(null)
+        setIsUnsavedDialogOpen(false)
+    }
+
+    const openDeleteDialog = () => {
+        if (!selectedOrder) {
+            return
+        }
+
+        setIsDeleteDialogOpen(true)
+    }
+
+    const confirmDeleteOrder = () => {
+        if (!selectedOrderId) {
+            setIsDeleteDialogOpen(false)
+            return
+        }
+
+        setOrders((current) => {
+            const filteredOrders = current.filter((order) => order.id !== selectedOrderId)
+            const nextSelectedOrder = filteredOrders[0] ?? null
+
+            if (nextSelectedOrder) {
+                const nextDraft = createDraftFromOrder(nextSelectedOrder)
+                setSelectedOrderId(nextSelectedOrder.id)
+                setDraft(nextDraft)
+                setBaselineDraft(nextDraft)
+            } else {
+                const nextDraft = createEmptyDraft()
+                setSelectedOrderId(null)
+                setDraft(nextDraft)
+                setBaselineDraft(nextDraft)
+            }
+
+            return filteredOrders
+        })
+
+        setIsDeleteDialogOpen(false)
+        setTitleError('')
     }
 
     return (
@@ -174,8 +313,8 @@ function App() {
                     <OrdersList
                         orders={orders}
                         selectedOrderId={selectedOrderId}
-                        onSelectOrder={handleSelectOrder}
-                        onNewOrder={handleNewOrder}
+                        onSelectOrder={(order) => requestNavigation({ type: 'select', order })}
+                        onNewOrder={() => requestNavigation({ type: 'new' })}
                     />
 
                     <OrderForm
@@ -189,10 +328,46 @@ function App() {
                         onRemoveItem={removeItem}
                         onSaveOrder={saveOrder}
                         onMarkComplete={markComplete}
+                        onDeleteOrder={openDeleteDialog}
+                        canDelete={!!selectedOrderId}
                         onTitleError={setTitleError}
                     />
                 </Box>
             </Stack>
+
+            <Dialog open={isUnsavedDialogOpen} onClose={() => setIsUnsavedDialogOpen(false)} fullWidth maxWidth="sm">
+                <DialogTitle>Niezapisane zmiany</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        Masz niezapisane zmiany. Jeśli opuścisz formularz, utracisz modyfikacje poniższych pól:
+                    </Typography>
+                    <Box component="ul" sx={{ mt: 1.5, mb: 0, pl: 3 }}>
+                        {changedFieldLabels.map((label) => (
+                            <Box component="li" key={label} sx={{ mb: 0.5 }}>
+                                <Typography component="span">{label}</Typography>
+                            </Box>
+                        ))}
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setIsUnsavedDialogOpen(false)}>Anuluj</Button>
+                    <Button color="warning" onClick={confirmUnsavedDiscard}>Odrzuć zmiany</Button>
+                    <Button variant="contained" onClick={confirmUnsavedSave}>Zapisz i przejdź</Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={isDeleteDialogOpen} onClose={() => setIsDeleteDialogOpen(false)} fullWidth maxWidth="xs">
+                <DialogTitle>Usunąć zlecenie?</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        Czy na pewno chcesz usunąć zlecenie "{selectedOrder?.title || selectedOrder?.clientName || 'bez tytułu'}"?
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setIsDeleteDialogOpen(false)}>Anuluj</Button>
+                    <Button color="error" variant="contained" onClick={confirmDeleteOrder}>Usuń</Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     )
 }

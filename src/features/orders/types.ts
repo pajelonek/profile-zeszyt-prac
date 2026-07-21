@@ -23,10 +23,7 @@ export interface Order {
   paidAmount: number
   totalPrice: number
   productCount: number
-  dueDate: string
-  completedAt: string
   notes: string
-  extraDetails: string
   items: OrderItem[]
 }
 
@@ -43,9 +40,6 @@ export interface OrderDraft {
   paidAmount: number
   totalPrice: number
   productCount: number
-  dueDate: string
-  completedAt: string
   notes: string
-  extraDetails: string
   items: OrderItem[]
 }

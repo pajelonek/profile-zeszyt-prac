@@ -73,14 +73,18 @@ export function OrdersList({ orders, selectedOrderId, onSelectOrder, onNewOrder 
                   onClick={() => onSelectOrder(order)}
                   aria-pressed={selectedOrderId === order.id}
                   aria-label={`Otwórz zlecenie ${order.title || order.clientName}`}
-                  className={`w-full rounded-2xl border p-3 text-left transition-all ${selectedOrderId === order.id ? 'border-sky-500 bg-sky-50 shadow-[0_6px_20px_rgba(2,132,199,0.12)]' : 'border-slate-200 bg-white shadow-sm hover:border-slate-300 hover:bg-slate-50 hover:shadow-md'
+                  className={`w-full rounded-2xl border p-3 text-left transition-all ${selectedOrderId === order.id ? 'border-sky-500 shadow-[0_6px_20px_rgba(2,132,199,0.12)]' : 'border-slate-200 bg-white shadow-sm hover:border-slate-300 hover:bg-slate-50 hover:shadow-md'
                     }`}
                   sx={{
                     display: 'block',
                     borderLeftWidth: '6px',
                     borderLeftStyle: 'solid',
                     borderLeftColor: selectedOrderId === order.id ? 'primary.main' : 'transparent',
+                    backgroundColor: selectedOrderId === order.id ? '#dbeafe' : 'white',
                     pl: 1.5,
+                    '&:hover': {
+                      backgroundColor: selectedOrderId === order.id ? '#bfdbfe' : '#f8fafc',
+                    },
                   }}
                 >
                   <Stack direction="row" spacing={1} sx={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -104,14 +108,22 @@ export function OrdersList({ orders, selectedOrderId, onSelectOrder, onNewOrder 
                       sx={{ flexShrink: 0 }}
                     />
                   </Stack>
+
                   <Typography variant="caption" color="text.secondary" className="mt-1 block" sx={{ overflowWrap: 'anywhere' }}>
                     {order.clientName} · {order.clientPhone || 'Brak telefonu'}
                   </Typography>
+
                   <Stack direction="row" className="mt-2" spacing={1} sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
                     <Typography variant="body2" sx={{ fontWeight: 600, minWidth: 0, pr: 1 }}>
                       Do odbioru: {formatCurrency(Math.max(0, order.paymentDue - order.paidAmount))}
                     </Typography>
-                    <Chip label={paymentLabels[order.paymentState]} size="small" color={paymentChipStyles[order.paymentState].color} variant="filled" sx={{ flexShrink: 0 }} />
+                    <Chip
+                      label={paymentLabels[order.paymentState]}
+                      size="small"
+                      color={paymentChipStyles[order.paymentState].color}
+                      variant="filled"
+                      sx={{ flexShrink: 0 }}
+                    />
                   </Stack>
                 </ButtonBase>
               ))}

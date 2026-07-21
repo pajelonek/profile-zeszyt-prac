@@ -27,10 +27,7 @@ create table orders (
   paid_amount numeric(10,2) not null default 0,
   total_price numeric(10,2) not null default 0,
   product_count int not null default 0,
-  due_date date,
-  completed_at timestamptz,
-  notes text,
-  extra_details text
+  notes text
 );
 
 create table order_items (
