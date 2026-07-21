@@ -7,18 +7,37 @@ This app digitizes workshop orders so anyone stops losing track of unpaid work a
 ## User story
 
 - As a workshop owner, I want to record each job as a single order.
-- I want to store client details, order status, payment state, item count, and extra notes.
+- I want to store only the client name and telephone number, plus job and payment details.
 - I want to update status, payment, order details, and product information later.
 - I want the app to remind me what is still unfinished or unpaid.
 
 ## Goals
 
 - Track workshop orders in Supabase.
-- Store client metadata and order-level details.
+- Keep client data minimal: name + telephone number only.
 - Track products inside an order.
 - Track payment state and payment amount.
 - Allow updates to status, completion date, and notes.
 - Use Supabase Auth for login and future user control.
+
+## Dashboard summary (top of app)
+
+At the top of the screen, show only two summary values:
+
+- Number of jobs still awaiting payment.
+- Total PLN value still to be collected (outstanding amount).
+
+No other top summary cards are required.
+
+## Job card content order
+
+Each job description/card should be shown in this order:
+
+1. Job title (at the top).
+2. Client name.
+3. Client telephone number (only contact detail shown).
+4. Line items.
+5. Financial details (for example: total, paid amount, remaining amount, payment state).
 
 ## Non-goals
 
@@ -34,7 +53,8 @@ Represents a workshop job.
 
 - `id` — UUID primary key.
 - `created_at` / `updated_at`.
-- `client_name`, `client_phone`, `client_address`.
+- `job_title`.
+- `client_name`, `client_phone`.
 - `status` — workshop workflow state.
 - `payment_state` — not paid / partial / paid.
 - `payment_due`, `paid_amount`, `total_price`.
@@ -71,7 +91,7 @@ Default workshop states:
 ## Primary workflows
 
 1. Create new order
-   - Enter client info, details, due date, status, payment due, and items.
+   - Enter job title, client name, client telephone number, due date, status, payment due, and items.
 
 2. Update order
    - Change status, add or remove items, update payment state or amounts.
