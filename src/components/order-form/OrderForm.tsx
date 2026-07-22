@@ -19,14 +19,12 @@ type OrderFormProps = Readonly<{
   draft: OrderDraft
   selectedOrder: Order | null
   titleError: string
-  canMarkComplete: boolean
   canDelete: boolean
   onUpdateDraft: <K extends keyof OrderDraft>(field: K, value: OrderDraft[K]) => void
   onUpdateItem: (itemId: string, field: 'description' | 'quantity' | 'unit_price', value: string) => void
   onAddItem: () => void
   onRemoveItem: (itemId: string) => void
   onSaveOrder: NonNullable<ComponentProps<'form'>['onSubmit']>
-  onMarkComplete: () => void
   onDeleteOrder: () => void
   onTitleError: (error: string) => void
 }>
@@ -35,14 +33,12 @@ export function OrderForm({
   draft,
   selectedOrder,
   titleError,
-  canMarkComplete,
   canDelete,
   onUpdateDraft,
   onUpdateItem,
   onAddItem,
   onRemoveItem,
   onSaveOrder,
-  onMarkComplete,
   onDeleteOrder,
   onTitleError,
 }: OrderFormProps) {
@@ -63,9 +59,6 @@ export function OrderForm({
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} className="w-full sm:w-auto">
               <Button variant="outlined" type="button" className="w-full sm:w-auto" onClick={onDeleteOrder} color="error" disabled={!canDelete} sx={{ borderRadius: 2, px: 1.6 }}>
                 Usuń zlecenie
-              </Button>
-              <Button variant="outlined" type="button" className="w-full sm:w-auto" onClick={onMarkComplete} color="success" disabled={!canMarkComplete} sx={{ borderRadius: 2, px: 1.6 }}>
-                Oznacz jako wydane
               </Button>
               <Button variant="contained" type="submit" className="w-full sm:w-auto" sx={{ borderRadius: 2, px: 1.6 }}>
                 Zapisz zlecenie

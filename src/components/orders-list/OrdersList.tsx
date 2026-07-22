@@ -28,9 +28,14 @@ export function OrdersList({ orders, selectedOrderId, onSelectOrder, onNewOrder 
   const [page, setPage] = useState<number>(1)
   const [showOnlyUnpaid, setShowOnlyUnpaid] = useState(false)
 
+  const sortedOrders = useMemo(
+    () => [...orders].sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()),
+    [orders],
+  )
+
   const filteredOrders = useMemo(
-    () => (showOnlyUnpaid ? orders.filter((order) => order.status !== 'paid') : orders),
-    [orders, showOnlyUnpaid],
+    () => (showOnlyUnpaid ? sortedOrders.filter((order) => order.status !== 'paid') : sortedOrders),
+    [sortedOrders, showOnlyUnpaid],
   )
 
   const totalOrders = filteredOrders.length

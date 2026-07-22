@@ -11,7 +11,7 @@ import LinearProgress from '@mui/material/LinearProgress'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { AppHeader, AuthScreen, OrdersList, OrderForm } from './components'
-import { fetchOrders, upsertOrder, patchOrderStatus, removeOrder } from './features/orders/api'
+import { fetchOrders, upsertOrder, removeOrder } from './features/orders/api'
 import type { Order, OrderDraft } from './features/orders/types'
 import {
     cloneItems,
@@ -81,7 +81,6 @@ function App() {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
     const selectedOrder = useMemo(() => orders.find((order) => order.id === selectedOrderId) ?? null, [orders, selectedOrderId])
-    const canMarkComplete = !!selectedOrderId && draft.status !== 'delivered' && draft.status !== 'paid'
     const changedFieldLabels = useMemo(() => getChangedFieldLabels(baselineDraft, draft), [baselineDraft, draft])
     const hasUnsavedChanges = changedFieldLabels.length > 0
 
@@ -259,29 +258,6 @@ function App() {
         void persistDraft()
     }
 
-    const markComplete = () => {
-        if (!selectedOrderId) {
-            return
-        }
-
-        void patchOrderStatus(selectedOrderId, 'delivered')
-            .then(() => {
-                setOrders((current) =>
-                    current.map((order) =>
-                        order.id === selectedOrderId
-                            ? { ...order, status: 'delivered', updatedAt: new Date().toISOString() }
-                            : order,
-                    ),
-                )
-                setDraft((current) => ({ ...current, status: 'delivered' }))
-                setBaselineDraft((current) => ({ ...current, status: 'delivered' }))
-            })
-            .catch((err: unknown) => {
-                setApiError('Nie udało się zaktualizować statusu. Spróbuj ponownie.')
-                console.error(err)
-            })
-    }
-
     const confirmUnsavedDiscard = () => {
         if (navigationIntent) {
             applyNavigationIntent(navigationIntent)
@@ -406,13 +382,11 @@ function App() {
                         draft={draft}
                         selectedOrder={selectedOrder}
                         titleError={titleError}
-                        canMarkComplete={canMarkComplete}
                         onUpdateDraft={updateDraft}
                         onUpdateItem={updateItem}
                         onAddItem={addItem}
                         onRemoveItem={removeItem}
                         onSaveOrder={saveOrder}
-                        onMarkComplete={markComplete}
                         onDeleteOrder={openDeleteDialog}
                         canDelete={!!selectedOrderId}
                         onTitleError={setTitleError}
