@@ -1,6 +1,7 @@
 import { supabase } from '../../lib/supabase'
 import type { Order, OrderDraft, OrderStatus } from './types'
 import { calculateOrderTotals, normalizeItems } from './utils'
+import { DEFAULT_ORDER_STATUS, isOrderStatus } from './constants'
 
 // ── DB row shapes ─────────────────────────────────────────────────────────────
 
@@ -30,6 +31,26 @@ interface DbOrder {
   order_items: DbOrderItem[]
 }
 
+const legacyStatusMap: Record<string, OrderStatus> = {
+  Przyjete: 'accepted',
+  'W trakcie': 'in_progress',
+  Wydane: 'delivered',
+  Zaplacone: 'paid',
+  Domowione: 'ordered',
+}
+
+function toOrderStatus(rawStatus: string): OrderStatus {
+  if (isOrderStatus(rawStatus)) {
+    return rawStatus
+  }
+
+  if (rawStatus in legacyStatusMap) {
+    return legacyStatusMap[rawStatus]
+  }
+
+  return DEFAULT_ORDER_STATUS
+}
+
 // ── Row → domain mapping ──────────────────────────────────────────────────────
 
 function rowToOrder(row: DbOrder): Order {
@@ -48,7 +69,7 @@ function rowToOrder(row: DbOrder): Order {
     clientName: row.client_name ?? '',
     clientPhone: row.client_phone ?? '',
     title: row.job_title ?? '',
-    status: row.status as OrderStatus,
+    status: toOrderStatus(row.status),
     totalPrice: Number(row.total_price),
     productCount: row.product_count,
     notes: row.notes ?? '',

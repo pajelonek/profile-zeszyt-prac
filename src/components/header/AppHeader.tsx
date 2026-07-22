@@ -12,9 +12,9 @@ type AppHeaderProps = Readonly<{
 }>
 
 export function AppHeader({ orders, userEmail }: AppHeaderProps) {
-  const unpaidCount = useMemo(() => orders.filter((order) => order.status !== 'Zaplacone').length, [orders])
+  const unpaidCount = useMemo(() => orders.filter((order) => order.status !== 'paid').length, [orders])
   const outstandingPln = useMemo(
-    () => orders.reduce((sum, order) => sum + (order.status !== 'Zaplacone' ? order.totalPrice : 0), 0),
+    () => orders.reduce((sum, order) => sum + (order.status !== 'paid' ? order.totalPrice : 0), 0),
     [orders],
   )
 

@@ -1,11 +1,15 @@
 import type { OrderStatus } from './types'
 
+export const DEFAULT_ORDER_STATUS: OrderStatus = 'accepted'
+
 export const orderStatusChipStyles: Record<OrderStatus, { color: 'default' | 'primary' | 'warning' | 'success' | 'info'; label: string }> = {
-  Przyjete: { color: 'info', label: 'Przyjęte' },
-  'W trakcie': { color: 'warning', label: 'W trakcie' },
-  Wydane: { color: 'success', label: 'Wydane' },
-  Zaplacone: { color: 'success', label: 'Zapłacone' },
-  Domowione: { color: 'primary', label: 'Domówione' },
+  accepted: { color: 'info', label: 'Przyjęte' },
+  in_progress: { color: 'warning', label: 'W trakcie' },
+  delivered: { color: 'success', label: 'Wydane' },
+  paid: { color: 'success', label: 'Zapłacone' },
+  ordered: { color: 'primary', label: 'Domówione' },
 }
 
-export const orderStatuses: OrderStatus[] = ['Przyjete', 'W trakcie', 'Wydane', 'Zaplacone', 'Domowione']
+export const orderStatuses: OrderStatus[] = ['accepted', 'in_progress', 'delivered', 'paid', 'ordered']
+
+export const isOrderStatus = (value: string): value is OrderStatus => value in orderStatusChipStyles

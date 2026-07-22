@@ -10,7 +10,7 @@ import Select from '@mui/material/Select'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
-import { orderStatuses } from '../../features/orders/constants'
+import { orderStatuses, orderStatusChipStyles } from '../../features/orders/constants'
 import type { OrderDraft, Order } from '../../features/orders/types'
 import { formatCurrency } from '../../features/orders/utils'
 import { OrderItems } from '../order-items/OrderItems'
@@ -92,7 +92,7 @@ export function OrderForm({
               <Select labelId="status-label" label="Status" value={draft.status} onChange={(event) => onUpdateDraft('status', event.target.value)}>
                 {orderStatuses.map((status) => (
                   <MenuItem key={status} value={status}>
-                    {status}
+                    {orderStatusChipStyles[status].label}
                   </MenuItem>
                 ))}
               </Select>

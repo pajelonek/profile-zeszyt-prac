@@ -81,7 +81,7 @@ function App() {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
     const selectedOrder = useMemo(() => orders.find((order) => order.id === selectedOrderId) ?? null, [orders, selectedOrderId])
-    const canMarkComplete = !!selectedOrderId && draft.status !== 'Wydane' && draft.status !== 'Zaplacone'
+    const canMarkComplete = !!selectedOrderId && draft.status !== 'delivered' && draft.status !== 'paid'
     const changedFieldLabels = useMemo(() => getChangedFieldLabels(baselineDraft, draft), [baselineDraft, draft])
     const hasUnsavedChanges = changedFieldLabels.length > 0
 
@@ -264,17 +264,17 @@ function App() {
             return
         }
 
-        void patchOrderStatus(selectedOrderId, 'Wydane')
+        void patchOrderStatus(selectedOrderId, 'delivered')
             .then(() => {
                 setOrders((current) =>
                     current.map((order) =>
                         order.id === selectedOrderId
-                            ? { ...order, status: 'Wydane', updatedAt: new Date().toISOString() }
+                            ? { ...order, status: 'delivered', updatedAt: new Date().toISOString() }
                             : order,
                     ),
                 )
-                setDraft((current) => ({ ...current, status: 'Wydane' }))
-                setBaselineDraft((current) => ({ ...current, status: 'Wydane' }))
+                setDraft((current) => ({ ...current, status: 'delivered' }))
+                setBaselineDraft((current) => ({ ...current, status: 'delivered' }))
             })
             .catch((err: unknown) => {
                 setApiError('Nie udało się zaktualizować statusu. Spróbuj ponownie.')

@@ -29,7 +29,7 @@ export function OrdersList({ orders, selectedOrderId, onSelectOrder, onNewOrder 
   const [showOnlyUnpaid, setShowOnlyUnpaid] = useState(false)
 
   const filteredOrders = useMemo(
-    () => (showOnlyUnpaid ? orders.filter((order) => order.status !== 'Zaplacone') : orders),
+    () => (showOnlyUnpaid ? orders.filter((order) => order.status !== 'paid') : orders),
     [orders, showOnlyUnpaid],
   )
 

@@ -1,4 +1,5 @@
 import type { OrderDraft, OrderItem } from './types'
+import { DEFAULT_ORDER_STATUS } from './constants'
 
 let fallbackIdCounter = 0
 
@@ -22,7 +23,7 @@ export const createEmptyDraft = (): OrderDraft => ({
   title: '',
   clientName: '',
   clientPhone: '',
-  status: 'Przyjete',
+  status: DEFAULT_ORDER_STATUS,
   totalPrice: 0,
   productCount: 0,
   notes: '',
