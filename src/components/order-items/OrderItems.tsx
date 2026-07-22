@@ -16,7 +16,7 @@ type OrderItemsProps = Readonly<{
 export function OrderItems({ items, onUpdateItem, onAddItem, onRemoveItem }: OrderItemsProps) {
   return (
     <Box>
-      <Stack direction={{ xs: 'column', sm: 'row' }} className="mb-3" sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' } }}>
+      <Stack direction={{ xs: 'column', sm: 'row' }} className="mb-2.5" sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' } }}>
         <Typography variant="h6" sx={{ fontWeight: 700 }}>
           Pozycje
         </Typography>
@@ -25,9 +25,9 @@ export function OrderItems({ items, onUpdateItem, onAddItem, onRemoveItem }: Ord
         </Button>
       </Stack>
 
-      <Stack spacing={2}>
+      <Stack spacing={1.5}>
         {items.map((item: OrderItem, index) => (
-          <Box key={item.id} className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 shadow-sm lg:grid-cols-[2fr_0.7fr_0.9fr_auto_auto]">
+          <Box key={item.id} className="grid gap-2.5 rounded-lg border border-slate-300 bg-slate-50 p-2.5 lg:grid-cols-[2fr_0.78fr_0.9fr_auto_auto]">
             <TextField
               id={`item-desc-${item.id}`}
               label="Usługa / opis"
@@ -53,14 +53,14 @@ export function OrderItems({ items, onUpdateItem, onAddItem, onRemoveItem }: Ord
               onChange={(event) => onUpdateItem(item.id, 'unit_price', event.target.value)}
               fullWidth
             />
-            <Box className="flex flex-col justify-end rounded-xl border border-slate-200 bg-white px-3 py-2">
-              <Typography variant="caption" color="text.secondary">
+            <Box className="flex flex-col justify-end rounded-md border border-slate-300 bg-white px-2.5 py-1.5">
+              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
                 Suma pozycji
               </Typography>
               <Typography sx={{ fontWeight: 700 }}>{formatCurrency(item.item_total)}</Typography>
             </Box>
             {items.length > 1 ? (
-              <Button color="error" variant="outlined" type="button" onClick={() => onRemoveItem(item.id)}>
+              <Button color="error" variant="outlined" type="button" onClick={() => onRemoveItem(item.id)} aria-label={`Usuń pozycję ${index + 1}`}>
                 Usuń
               </Button>
             ) : (

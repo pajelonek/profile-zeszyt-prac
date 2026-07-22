@@ -11,42 +11,40 @@ type AppHeaderProps = Readonly<{
 }>
 
 export function AppHeader({ orders }: AppHeaderProps) {
-  const unpaidCount = useMemo(() => orders.filter((order) => order.paymentState !== 'paid').length, [orders])
+  const unpaidCount = useMemo(() => orders.filter((order) => order.status !== 'Zaplacone').length, [orders])
   const outstandingPln = useMemo(
-    () => orders.reduce((sum, order) => sum + Math.max(0, order.paymentDue - order.paidAmount), 0),
+    () => orders.reduce((sum, order) => sum + (order.status !== 'Zaplacone' ? order.totalPrice : 0), 0),
     [orders],
   )
 
   return (
-    <Paper elevation={3} className="rounded-[24px] bg-white p-4 shadow-[0_20px_40px_rgba(15,23,42,0.08)] sm:p-6">
-      <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ justifyContent: 'space-between' }}>
+    <Paper elevation={0} className="rounded-xl bg-white p-3.5 sm:p-4">
+      <Stack
+        direction={{ xs: 'column', lg: 'row' }}
+        spacing={1.5}
+        sx={{ justifyContent: 'space-between', alignItems: { xs: 'stretch', lg: 'center' } }}
+      >
         <Box>
-          <Typography variant="overline" color="text.secondary">
-            Tracker zleceń warsztatowych
-          </Typography>
-          <Typography variant="h4" sx={{ fontWeight: 700, fontSize: { xs: '1.75rem', md: '2.25rem' } }}>
+          <Typography variant="h4" sx={{ fontWeight: 700, fontSize: { xs: '1.7rem', md: '1.95rem' } }}>
             Rejestr zleceń i płatności warsztatu
-          </Typography>
-          <Typography color="text.secondary" className="max-w-2xl">
-            Skupienie na pracy operacyjnej: kto czeka na odbiór, kto nie zapłacił i ile pieniędzy jest jeszcze do odzyskania.
           </Typography>
         </Box>
 
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} className="w-full">
-          <Paper elevation={1} className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
-            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} aria-live="polite">
+          <Paper elevation={0} className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5">
+            <Typography variant="h5" sx={{ fontWeight: 800, fontSize: '2rem' }}>
               {unpaidCount}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Zlecenia oczekujące na płatność
+            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+              Zlecenia nieopłacone
             </Typography>
           </Paper>
-          <Paper elevation={1} className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
-            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+          <Paper elevation={0} className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5">
+            <Typography variant="h5" sx={{ fontWeight: 800, fontSize: '2rem' }}>
               {formatCurrency(outstandingPln)}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Kwota do odzyskania (PLN)
+            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+              Całkowita cena do zapłaty (PLN)
             </Typography>
           </Paper>
         </Stack>

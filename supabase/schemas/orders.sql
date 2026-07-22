@@ -8,12 +8,6 @@ create type order_status as enum (
   'ordered'
 );
 
-create type payment_state as enum (
-  'not_paid',
-  'partial',
-  'paid'
-);
-
 create table orders (
   id uuid primary key default gen_random_uuid(),
   created_at timestamptz not null default now(),
@@ -22,9 +16,6 @@ create table orders (
   client_name text,
   client_phone text,
   status order_status not null default 'accepted',
-  payment_state payment_state not null default 'not_paid',
-  payment_due numeric(10,2) not null default 0,
-  paid_amount numeric(10,2) not null default 0,
   total_price numeric(10,2) not null default 0,
   product_count int not null default 0,
   notes text

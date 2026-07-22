@@ -55,9 +55,6 @@ const getChangedFieldLabels = (baseline: OrderDraft, current: OrderDraft) => {
     if (baseline.status !== current.status) labels.push('Status')
     if (baseline.clientName.trim() !== current.clientName.trim()) labels.push('Imię i nazwisko klienta')
     if (baseline.clientPhone.trim() !== current.clientPhone.trim()) labels.push('Telefon klienta')
-    if (Number(baseline.paymentDue) !== Number(current.paymentDue)) labels.push('Kwota do zapłaty')
-    if (Number(baseline.paidAmount) !== Number(current.paidAmount)) labels.push('Kwota zapłacona')
-    if (baseline.paymentState !== current.paymentState) labels.push('Stan płatności')
     if (baseline.notes.trim() !== current.notes.trim()) labels.push('Notatki')
     if (changedItems(baseline.items, current.items)) labels.push('Pozycje zlecenia')
 
@@ -91,7 +88,7 @@ function App() {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
     const selectedOrder = useMemo(() => orders.find((order) => order.id === selectedOrderId) ?? null, [orders, selectedOrderId])
-    const canMarkComplete = !!selectedOrderId && draft.status !== 'Wydane'
+    const canMarkComplete = !!selectedOrderId && draft.status !== 'Wydane' && draft.status !== 'Zaplacone'
     const changedFieldLabels = useMemo(() => getChangedFieldLabels(baselineDraft, draft), [baselineDraft, draft])
     const hasUnsavedChanges = changedFieldLabels.length > 0
 
@@ -186,9 +183,6 @@ function App() {
             title: draft.title?.trim() || '',
             clientPhone: draft.clientPhone.trim(),
             status: draft.status,
-            paymentState: draft.paymentState,
-            paymentDue: Number(draft.paymentDue) || 0,
-            paidAmount: Number(draft.paidAmount) || 0,
             totalPrice,
             productCount,
             notes: draft.notes.trim(),
@@ -295,17 +289,17 @@ function App() {
     }
 
     return (
-        <Box className="min-h-screen bg-slate-100 p-3 sm:p-4 md:p-8">
-            <Stack spacing={3}>
+        <Box className="min-h-screen bg-[#f4f4f4] p-2.5 sm:p-3.5 md:p-4.5">
+            <Stack spacing={2}>
                 <AppHeader orders={orders} />
 
                 <Box
                     sx={{
                         display: 'grid',
-                        gap: 3,
+                        gap: 2,
                         gridTemplateColumns: {
                             xs: '1fr',
-                            lg: '340px minmax(0, 1fr)',
+                            lg: '330px minmax(0, 1fr)',
                         },
                         alignItems: 'stretch',
                     }}
@@ -336,15 +330,15 @@ function App() {
             </Stack>
 
             <Dialog open={isUnsavedDialogOpen} onClose={() => setIsUnsavedDialogOpen(false)} fullWidth maxWidth="sm">
-                <DialogTitle>Niezapisane zmiany</DialogTitle>
+                <DialogTitle sx={{ fontWeight: 700 }}>Niezapisane zmiany</DialogTitle>
                 <DialogContent>
-                    <Typography>
+                    <Typography variant="body1">
                         Masz niezapisane zmiany. Jeśli opuścisz formularz, utracisz modyfikacje poniższych pól:
                     </Typography>
                     <Box component="ul" sx={{ mt: 1.5, mb: 0, pl: 3 }}>
                         {changedFieldLabels.map((label) => (
                             <Box component="li" key={label} sx={{ mb: 0.5 }}>
-                                <Typography component="span">{label}</Typography>
+                                <Typography component="span" variant="body1">{label}</Typography>
                             </Box>
                         ))}
                     </Box>
@@ -357,9 +351,9 @@ function App() {
             </Dialog>
 
             <Dialog open={isDeleteDialogOpen} onClose={() => setIsDeleteDialogOpen(false)} fullWidth maxWidth="xs">
-                <DialogTitle>Usunąć zlecenie?</DialogTitle>
+                <DialogTitle sx={{ fontWeight: 700 }}>Usunąć zlecenie?</DialogTitle>
                 <DialogContent>
-                    <Typography>
+                    <Typography variant="body1">
                         Czy na pewno chcesz usunąć zlecenie "{selectedOrder?.title || selectedOrder?.clientName || 'bez tytułu'}"?
                     </Typography>
                 </DialogContent>

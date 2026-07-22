@@ -16,7 +16,7 @@ This app digitizes workshop orders so anyone stops losing track of unpaid work a
 - Track workshop orders in Supabase.
 - Keep client data minimal: name + telephone number only.
 - Track products inside an order.
-- Track payment state and payment amount.
+- Calculate order total from line items.
 - Allow updates to status and notes.
 - Use Supabase Auth for login and future user control.
 
@@ -24,8 +24,8 @@ This app digitizes workshop orders so anyone stops losing track of unpaid work a
 
 At the top of the screen, show only two summary values:
 
-- Number of jobs still awaiting payment.
-- Total PLN value still to be collected (outstanding amount).
+- Number of jobs still not marked as `Zaplacone`.
+- Total PLN value still to be collected, calculated as sum of line-item totals for jobs not marked as `Zaplacone`.
 
 No other top summary cards are required.
 
@@ -38,7 +38,7 @@ Each job description/card should be shown in this order:
 3. Client name.
 4. Client telephone number (only contact detail shown).
 5. Line items.
-6. Financial details (for example: total, paid amount, remaining amount, payment state).
+6. Financial details (order total calculated from line items).
 
 ## Non-goals
 
@@ -57,8 +57,7 @@ Represents a workshop job.
 - `job_title`.
 - `client_name`, `client_phone`.
 - `status` — workshop workflow state.
-- `payment_state` — not paid / partial / paid.
-- `payment_due`, `paid_amount`, `total_price`.
+- `total_price` — derived from related `order_items` (can be computed in query/view, not required as an editable form field).
 - `product_count` — number of products or items in the order.
 - `notes`.
 - No separate additional-details text field is required; `notes` is enough.
@@ -85,19 +84,13 @@ Default workshop states:
 - `Zaplacone`
 - `Domowione`
 
-## Payment workflow
-
-- `not_paid` — no payment received yet.
-- `partial` — partial payment received.
-- `paid` — fully paid.
-
 ## Primary workflows
 
 1. Create new order
-   - Enter job title, status, client name, client telephone number, payment due, and items.
+   - Enter job title, status, client name, client telephone number, and items.
 
 2. Update order
-   - Change status, add or remove items, update payment state or amounts.
+   - Change status, add or remove items, update notes and product information.
 
 3. Unsaved changes
    - If the user leaves with unsaved form changes, show a confirmation dialog in Polish.
@@ -109,10 +102,7 @@ Default workshop states:
    - Show a confirmation dialog before the deletion is executed.
 
 5. Mark completion
-   - Set status to the finished workflow state when work is done.
-
-6. Payment tracking
-   - Update `paid_amount` and `payment_state`.
+   - Set status to `Wydane` when work is done and to `Zaplacone` when payment is completed.
 
 ## Implementation notes
 
