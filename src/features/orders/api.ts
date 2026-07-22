@@ -37,6 +37,7 @@ const legacyStatusMap: Record<string, OrderStatus> = {
   Wydane: 'delivered',
   Zaplacone: 'paid',
   Domowione: 'ordered',
+  Zarchiwizowane: 'archived',
 }
 
 function toOrderStatus(rawStatus: string): OrderStatus {
@@ -152,7 +153,11 @@ export async function patchOrderStatus(orderId: string, status: OrderStatus): Pr
 export async function removeOrder(orderId: string): Promise<void> {
   const { error } = await supabase
     .from('orders')
-    .update({ archived_at: new Date().toISOString() })
+    .update({
+      archived_at: new Date().toISOString(),
+      status: 'archived',
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', orderId)
 
   if (error) throw error

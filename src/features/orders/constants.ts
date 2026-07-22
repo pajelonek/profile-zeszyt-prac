@@ -8,6 +8,7 @@ export const orderStatusChipStyles: Record<OrderStatus, { color: 'default' | 'pr
   delivered: { color: 'success', label: 'Wydane' },
   paid: { color: 'success', label: 'Zapłacone' },
   ordered: { color: 'primary', label: 'Domówione' },
+  archived: { color: 'default', label: 'Zarchiwizowane' },
 }
 
 export const orderStatuses: OrderStatus[] = ['accepted', 'in_progress', 'delivered', 'paid', 'ordered']

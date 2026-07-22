@@ -5,7 +5,8 @@ create type order_status as enum (
   'in_progress',
   'delivered',
   'paid',
-  'ordered'
+  'ordered',
+  'archived'
 );
 
 create table orders (

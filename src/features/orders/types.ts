@@ -1,4 +1,4 @@
-export type OrderStatus = 'accepted' | 'in_progress' | 'delivered' | 'paid' | 'ordered'
+export type OrderStatus = 'accepted' | 'in_progress' | 'delivered' | 'paid' | 'ordered' | 'archived'
 
 export interface OrderItem {
   id: string
