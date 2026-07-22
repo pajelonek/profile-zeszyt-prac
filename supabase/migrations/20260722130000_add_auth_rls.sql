@@ -1,40 +1,6 @@
--- Orders schema for workshop order tracker
+alter table orders
+add column owner_user_id uuid references auth.users(id);
 
-create type order_status as enum (
-  'accepted',
-  'in_progress',
-  'delivered',
-  'paid',
-  'ordered'
-);
-
-create table orders (
-  id uuid primary key default gen_random_uuid(),
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  owner_user_id uuid references auth.users(id),
-  job_title text,
-  client_name text,
-  client_phone text,
-  status order_status not null default 'accepted',
-  total_price numeric(10,2) not null default 0,
-  product_count int not null default 0,
-  notes text
-);
-
-create table order_items (
-  id uuid primary key default gen_random_uuid(),
-  order_id uuid not null references orders(id) on delete cascade,
-  position int not null default 1,
-  description text not null,
-  quantity int not null default 1,
-  unit_price numeric(10,2) not null default 0,
-  item_total numeric(10,2) generated always as (quantity * unit_price) stored,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create index order_items_order_id_idx on order_items(order_id);
 create index orders_owner_user_id_idx on orders(owner_user_id);
 
 alter table orders enable row level security;

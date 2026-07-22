@@ -19,6 +19,9 @@ This app digitizes workshop orders so anyone stops losing track of unpaid work a
 - Calculate order total from line items.
 - Allow updates to status and notes.
 - Use Supabase Auth for login and future user control.
+- Require authentication before the app content is visible.
+- Allow only authenticated users to create, edit, or delete data in Supabase.
+- Scope every order and order item to the authenticated user.
 
 ## Dashboard summary (top of app)
 
@@ -89,6 +92,11 @@ Default workshop states:
 1. Create new order
    - Enter job title, status, client name, client telephone number, and items.
 
+0. Authenticate user
+   - The app must show a login screen before the main interface is accessible.
+   - Support email and password authentication through Supabase Auth.
+   - If the project keeps email confirmation enabled in Supabase, the UI should clearly inform the user that activation may be required before login.
+
 2. Update order
    - Change status, add or remove items, update notes and product information.
 
@@ -100,6 +108,9 @@ Default workshop states:
 4. Delete order
    - Allow deleting a job from the form.
    - Show a confirmation dialog before the deletion is executed.
+   - Deletion is a soft-delete: the order's `archived_at` timestamp is set in the database; the row is never hard-deleted.
+   - Archived orders are excluded from all queries and are invisible to the user.
+   - The archived state cannot be set or reversed through the UI or the public API — it is an internal implementation detail of the delete action.
 
 5. Mark completion
    - Set status to `Wydane` when work is done and to `Zaplacone` when payment is completed.
@@ -110,3 +121,6 @@ Default workshop states:
 - Keep the app UI focused on current orders and quick updates.
 - Use `orders` + `order_items` model because product-level tracking is required.
 - Later, add filters for unpaid or incomplete orders.
+- The frontend must use the Supabase anon key only. Service-role or secret keys must never be shipped to the browser.
+- Protect `orders` and `order_items` with Supabase Row Level Security.
+- Each order should carry the authenticated user identifier so backend policies can reject unauthenticated or cross-user access.

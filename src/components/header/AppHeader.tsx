@@ -8,9 +8,10 @@ import { formatCurrency } from '../../features/orders/utils'
 
 type AppHeaderProps = Readonly<{
   orders: readonly Order[]
+  userEmail: string
 }>
 
-export function AppHeader({ orders }: AppHeaderProps) {
+export function AppHeader({ orders, userEmail }: AppHeaderProps) {
   const unpaidCount = useMemo(() => orders.filter((order) => order.status !== 'Zaplacone').length, [orders])
   const outstandingPln = useMemo(
     () => orders.reduce((sum, order) => sum + (order.status !== 'Zaplacone' ? order.totalPrice : 0), 0),
@@ -28,9 +29,12 @@ export function AppHeader({ orders }: AppHeaderProps) {
           <Typography variant="h4" sx={{ fontWeight: 700, fontSize: { xs: '1.7rem', md: '1.95rem' } }}>
             Rejestr zleceń i płatności warsztatu
           </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75, fontWeight: 600 }}>
+            Zalogowano jako: {userEmail}
+          </Typography>
         </Box>
 
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} aria-live="polite">
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ alignItems: { xs: 'stretch', sm: 'center' } }}>
           <Paper elevation={0} className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5">
             <Typography variant="h5" sx={{ fontWeight: 800, fontSize: '2rem' }}>
               {unpaidCount}

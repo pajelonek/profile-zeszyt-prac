@@ -1,4 +1,5 @@
 export { AppHeader } from './header'
+export { AuthScreen } from './auth'
 export { OrdersList } from './orders-list'
 export { OrderForm } from './order-form'
 export { OrderItems } from './order-items'

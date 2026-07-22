@@ -1,23 +1,25 @@
-import { useMemo, useState, type ComponentProps } from 'react'
+import { useEffect, useMemo, useState, type ComponentProps } from 'react'
+import type { Session } from '@supabase/supabase-js'
+import Alert from '@mui/material/Alert'
 import Button from '@mui/material/Button'
 import Box from '@mui/material/Box'
 import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
+import LinearProgress from '@mui/material/LinearProgress'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import { AppHeader, OrdersList, OrderForm } from './components'
-import { initialOrders } from './features/orders/mockData'
+import { AppHeader, AuthScreen, OrdersList, OrderForm } from './components'
+import { fetchOrders, upsertOrder, patchOrderStatus, removeOrder } from './features/orders/api'
 import type { Order, OrderDraft } from './features/orders/types'
 import {
-    calculateOrderTotals,
     cloneItems,
     createEmptyDraft,
     createId,
-    normalizeItems,
     parseNumericInput,
 } from './features/orders/utils'
+import { supabase } from './lib/supabase'
 
 const createDraftFromOrder = (order: Order): OrderDraft => ({
     ...order,
@@ -64,24 +66,15 @@ const getChangedFieldLabels = (baseline: OrderDraft, current: OrderDraft) => {
 type FormSubmitHandler = NonNullable<ComponentProps<'form'>['onSubmit']>
 
 function App() {
-    const [orders, setOrders] = useState<Order[]>(initialOrders)
-    const [selectedOrderId, setSelectedOrderId] = useState<string | null>(initialOrders[0]?.id ?? null)
-    const [draft, setDraft] = useState<OrderDraft>(() => {
-        const starter = initialOrders[0]
-        if (!starter) {
-            return createEmptyDraft()
-        }
-
-        return createDraftFromOrder(starter)
-    })
-    const [baselineDraft, setBaselineDraft] = useState<OrderDraft>(() => {
-        const starter = initialOrders[0]
-        if (!starter) {
-            return createEmptyDraft()
-        }
-
-        return createDraftFromOrder(starter)
-    })
+    const [session, setSession] = useState<Session | null>(null)
+    const [isAuthLoading, setIsAuthLoading] = useState(true)
+    const [authError, setAuthError] = useState('')
+    const [orders, setOrders] = useState<Order[]>([])
+    const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
+    const [draft, setDraft] = useState<OrderDraft>(createEmptyDraft)
+    const [baselineDraft, setBaselineDraft] = useState<OrderDraft>(createEmptyDraft)
+    const [isOrdersLoading, setIsOrdersLoading] = useState(false)
+    const [apiError, setApiError] = useState('')
     const [titleError, setTitleError] = useState('')
     const [navigationIntent, setNavigationIntent] = useState<NavigationIntent | null>(null)
     const [isUnsavedDialogOpen, setIsUnsavedDialogOpen] = useState(false)
@@ -91,6 +84,76 @@ function App() {
     const canMarkComplete = !!selectedOrderId && draft.status !== 'Wydane' && draft.status !== 'Zaplacone'
     const changedFieldLabels = useMemo(() => getChangedFieldLabels(baselineDraft, draft), [baselineDraft, draft])
     const hasUnsavedChanges = changedFieldLabels.length > 0
+
+    useEffect(() => {
+        let isMounted = true
+
+        const loadSession = async () => {
+            const { data, error } = await supabase.auth.getSession()
+
+            if (!isMounted) {
+                return
+            }
+
+            if (error) {
+                setAuthError('Nie udało się sprawdzić sesji logowania. Odśwież stronę i spróbuj ponownie.')
+            } else {
+                setSession(data.session)
+            }
+
+            setIsAuthLoading(false)
+        }
+
+        void loadSession()
+
+        const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+            if (!isMounted) {
+                return
+            }
+
+            setSession(nextSession)
+            setAuthError('')
+            setIsAuthLoading(false)
+        })
+
+        return () => {
+            isMounted = false
+            subscription.subscription.unsubscribe()
+        }
+    }, [])
+
+    useEffect(() => {
+        if (!session) return
+
+        let isMounted = true
+        setIsOrdersLoading(true)
+        setApiError('')
+
+        fetchOrders()
+            .then((fetched) => {
+                if (!isMounted) return
+                setOrders(fetched)
+                if (fetched.length > 0 && fetched[0]) {
+                    const first = fetched[0]
+                    setSelectedOrderId(first.id)
+                    const nextDraft = createDraftFromOrder(first)
+                    setDraft(nextDraft)
+                    setBaselineDraft(nextDraft)
+                }
+            })
+            .catch((err: unknown) => {
+                if (!isMounted) return
+                setApiError('Nie udało się wczytać zleceń. Odśwież stronę i spróbuj ponownie.')
+                console.error(err)
+            })
+            .finally(() => {
+                if (isMounted) setIsOrdersLoading(false)
+            })
+
+        return () => {
+            isMounted = false
+        }
+    }, [session])
 
     const updateDraft = <K extends keyof OrderDraft>(field: K, value: OrderDraft[K]) => {
         setDraft((current) => ({ ...current, [field]: value }))
@@ -165,50 +228,35 @@ function App() {
         applyNavigationIntent(intent)
     }
 
-    const persistDraft = () => {
+    const persistDraft = async (): Promise<Order | null> => {
         if (!draft.title?.trim()) {
             setTitleError('Tytuł zlecenia jest wymagany')
             return null
         }
 
-        const normalizedItems = normalizeItems(draft.items)
-        const { totalPrice, productCount } = calculateOrderTotals(normalizedItems)
-        const now = new Date().toISOString()
-
-        const nextOrder: Order = {
-            id: draft.id ?? createId(),
-            createdAt: draft.createdAt ?? now,
-            updatedAt: now,
-            clientName: draft.clientName.trim(),
-            title: draft.title?.trim() || '',
-            clientPhone: draft.clientPhone.trim(),
-            status: draft.status,
-            totalPrice,
-            productCount,
-            notes: draft.notes.trim(),
-            items: normalizedItems,
+        try {
+            setApiError('')
+            const savedOrder = await upsertOrder(draft)
+            setOrders((current) => {
+                const exists = current.some((o) => o.id === savedOrder.id)
+                if (exists) return current.map((o) => o.id === savedOrder.id ? savedOrder : o)
+                return [savedOrder, ...current]
+            })
+            setSelectedOrderId(savedOrder.id)
+            const nextDraft = createDraftFromOrder(savedOrder)
+            setDraft(nextDraft)
+            setBaselineDraft(nextDraft)
+            return savedOrder
+        } catch (err: unknown) {
+            setApiError('Nie udało się zapisać zlecenia. Spróbuj ponownie.')
+            console.error(err)
+            return null
         }
-
-        setOrders((current) => {
-            const exists = current.some((order) => order.id === nextOrder.id)
-            if (exists) {
-                return current.map((order) => (order.id === nextOrder.id ? nextOrder : order))
-            }
-
-            return [nextOrder, ...current]
-        })
-
-        setSelectedOrderId(nextOrder.id)
-        const nextDraft = createDraftFromOrder(nextOrder)
-        setDraft(nextDraft)
-        setBaselineDraft(nextDraft)
-
-        return nextOrder
     }
 
     const saveOrder: FormSubmitHandler = (event) => {
         event.preventDefault()
-        persistDraft()
+        void persistDraft()
     }
 
     const markComplete = () => {
@@ -216,15 +264,22 @@ function App() {
             return
         }
 
-        setOrders((current) =>
-            current.map((order) =>
-                order.id === selectedOrderId
-                    ? { ...order, status: 'Wydane', updatedAt: new Date().toISOString() }
-                    : order,
-            ),
-        )
-
-        setDraft((current) => ({ ...current, status: 'Wydane' }))
+        void patchOrderStatus(selectedOrderId, 'Wydane')
+            .then(() => {
+                setOrders((current) =>
+                    current.map((order) =>
+                        order.id === selectedOrderId
+                            ? { ...order, status: 'Wydane', updatedAt: new Date().toISOString() }
+                            : order,
+                    ),
+                )
+                setDraft((current) => ({ ...current, status: 'Wydane' }))
+                setBaselineDraft((current) => ({ ...current, status: 'Wydane' }))
+            })
+            .catch((err: unknown) => {
+                setApiError('Nie udało się zaktualizować statusu. Spróbuj ponownie.')
+                console.error(err)
+            })
     }
 
     const confirmUnsavedDiscard = () => {
@@ -236,8 +291,8 @@ function App() {
         setIsUnsavedDialogOpen(false)
     }
 
-    const confirmUnsavedSave = () => {
-        const savedOrder = persistDraft()
+    const confirmUnsavedSave = async () => {
+        const savedOrder = await persistDraft()
 
         if (!savedOrder) {
             return
@@ -259,8 +314,18 @@ function App() {
         setIsDeleteDialogOpen(true)
     }
 
-    const confirmDeleteOrder = () => {
+    const confirmDeleteOrder = async () => {
         if (!selectedOrderId) {
+            setIsDeleteDialogOpen(false)
+            return
+        }
+
+        try {
+            setApiError('')
+            await removeOrder(selectedOrderId)
+        } catch (err: unknown) {
+            setApiError('Nie udało się usunąć zlecenia. Spróbuj ponownie.')
+            console.error(err)
             setIsDeleteDialogOpen(false)
             return
         }
@@ -288,10 +353,36 @@ function App() {
         setTitleError('')
     }
 
+    if (isAuthLoading) {
+        return (
+            <Box className="min-h-screen bg-[#f4f4f4] p-4">
+                <Stack spacing={2} sx={{ mx: 'auto', maxWidth: 520, pt: { xs: 8, md: 12 } }}>
+                    <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                        Sprawdzanie dostępu
+                    </Typography>
+                    <Typography color="text.secondary">
+                        Trwa weryfikacja sesji użytkownika.
+                    </Typography>
+                    <LinearProgress />
+                </Stack>
+            </Box>
+        )
+    }
+
+    if (!session) {
+        return <AuthScreen />
+    }
+
     return (
         <Box className="min-h-screen bg-[#f4f4f4] p-2.5 sm:p-3.5 md:p-4.5">
             <Stack spacing={2}>
-                <AppHeader orders={orders} />
+                {authError ? <Alert severity="error">{authError}</Alert> : null}
+                {apiError ? <Alert severity="error">{apiError}</Alert> : null}
+                {isOrdersLoading ? <LinearProgress /> : null}
+                <AppHeader
+                    orders={orders}
+                    userEmail={session.user.email ?? 'konto bez adresu e-mail'}
+                />
 
                 <Box
                     sx={{
@@ -346,7 +437,7 @@ function App() {
                 <DialogActions>
                     <Button onClick={() => setIsUnsavedDialogOpen(false)}>Anuluj</Button>
                     <Button color="warning" onClick={confirmUnsavedDiscard}>Odrzuć zmiany</Button>
-                    <Button variant="contained" onClick={confirmUnsavedSave}>Zapisz i przejdź</Button>
+                    <Button variant="contained" onClick={() => { void confirmUnsavedSave() }}>Zapisz i przejdź</Button>
                 </DialogActions>
             </Dialog>
 
@@ -359,7 +450,7 @@ function App() {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setIsDeleteDialogOpen(false)}>Anuluj</Button>
-                    <Button color="error" variant="contained" onClick={confirmDeleteOrder}>Usuń</Button>
+                    <Button color="error" variant="contained" onClick={() => { void confirmDeleteOrder() }}>Usuń</Button>
                 </DialogActions>
             </Dialog>
         </Box>
